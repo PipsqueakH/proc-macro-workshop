@@ -18,6 +18,8 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
 
+        use std::error::Error;
+
         pub struct #builder_name  {
             executable: Option<String>,
             args: Option<Vec<String>>,
@@ -64,6 +66,23 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 self
             }
         }
+
+        impl #builder_name {
+            pub fn build(&mut self) -> Result<Command, Box<dyn Error>> {
+                let ex = self.executable.clone().ok_or_else::<Box<dyn Error>, _>(||::std::convert::From::from("has no executable"))?;
+                let ar = self.args.clone().ok_or_else::<Box<dyn Error>, _>(||::std::convert::From::from("has no args"))?;
+                let en = self.env.clone().ok_or_else::<Box<dyn Error>, _>(||::std::convert::From::from("has no enc"))?;
+                let cd = self.current_dir.clone().ok_or_else::<Box<dyn Error>, _>(||::std::convert::From::from("has no current_dir"))?;
+
+                Ok(Command {
+                    executable: ex,
+                    args: ar,
+                    env: en,
+                    current_dir: cd,
+                })
+            }
+        }
+
     };
 
     // Hand the output tokens back to the compiler.

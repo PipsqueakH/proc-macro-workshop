@@ -12,8 +12,16 @@ proc-macro = true
 name = "tests"
 path = "tests/progress.rs"
 
+[[bin]]
+name = "part"
+path = "tests/02-create-builder.rs"
+
+
+
 [dev-dependencies]
 trybuild = "1.0"
 
 [dependencies]
-# TODO
+proc-macro2 = "1.0"
+syn = "1.0.16"
+quote = "1.0"

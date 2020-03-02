@@ -36,6 +36,34 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 }
             }
         }
+
+        impl #builder_name {
+            fn executable(&mut self, executable: String) -> &mut Self {
+                self.executable = Some(executable);
+                self
+            }
+        }
+
+        impl #builder_name {
+            fn args(&mut self, args: Vec<String>) -> &mut Self {
+                self.args = Some(args);
+                self
+            }
+        }
+
+        impl #builder_name {
+            fn env(&mut self, env: Vec<String>) -> &mut Self {
+                self.env = Some(env);
+                self
+            }
+        }
+
+        impl #builder_name {
+            fn current_dir(&mut self, current_dir: String) -> &mut Self {
+                self.current_dir = Some(current_dir);
+                self
+            }
+        }
     };
 
     // Hand the output tokens back to the compiler.

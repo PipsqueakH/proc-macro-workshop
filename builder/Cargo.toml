@@ -14,7 +14,7 @@ path = "tests/progress.rs"
 
 [[bin]]
 name = "part"
-path = "tests/02-create-builder.rs"
+path = "tests/03-call-setters.rs"
 
 
 

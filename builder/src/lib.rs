@@ -12,10 +12,8 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     // Used in the quasi-quotation below as `#name`.
     let name = input.ident;
-
-    // let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-
     let builder_name = format_ident!("{}Builder", name);
+
     let (name_vec, type_vec): (Vec<proc_macro2::TokenStream>, Vec<proc_macro2::TokenStream>) =
         match input.data {
             Data::Struct(ref data) => match data.fields {
@@ -50,27 +48,26 @@ pub fn derive(input: TokenStream) -> TokenStream {
             }
         }
 
+        impl #builder_name {
+            #(fn #name_vec(&mut self, #name_vec: #type_vec) -> &mut Self {
+                self.#name_vec = Some(#name_vec);
+                self
+            })*
+
+        }
 
 
-        // impl #builder_name {
-        //     pub fn build(&mut self) -> Result<Command, Box<dyn Error>> {
-        //         let ex = self.executable.clone().ok_or_else::<Box<dyn Error>, _>(||::std::convert::From::from("has no executable"))?;
-        //         let ar = self.args.clone().ok_or_else::<Box<dyn Error>, _>(||::std::convert::From::from("has no args"))?;
-        //         let en = self.env.clone().ok_or_else::<Box<dyn Error>, _>(||::std::convert::From::from("has no enc"))?;
-        //         let cd = self.current_dir.clone().ok_or_else::<Box<dyn Error>, _>(||::std::convert::From::from("has no current_dir"))?;
 
-        //         Ok(Command {
-        //             executable: ex,
-        //             args: ar,
-        //             env: en,
-        //             current_dir: cd,
-        //         })
-        //     }
-        // }
+        impl #builder_name {
+            pub fn build(&mut self) -> Result<#name, Box<dyn Error>> {
+                #(let #name_vec = self.#name_vec.clone().ok_or_else::<Box<dyn Error>, _>(||::std::convert::From::from("there is missing field"))?;)*
+                Ok(Command {#(#name_vec ,)*})
+            }
+        }
 
     };
 
-    eprintln!("TOKENS: {}", expanded);
+    // eprintln!("TOKENS: {}", expanded);
     // Hand the output tokens back to the compiler.
     proc_macro::TokenStream::from(expanded)
 }

@@ -29,7 +29,8 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     let builder_fields = origin_fields.iter().map(|x| {
         let n = x.ident.as_ref();
-        let t = &x.ty;
+        let optioned_ty = type_in_option(&x.ty);
+        let t = optioned_ty.map_or(&x.ty, |x| x);
         quote! { #n: Option< #t>}
     });
 
@@ -40,7 +41,8 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     let setter_method = origin_fields.iter().map(|x| {
         let n = x.ident.as_ref();
-        let t = &x.ty;
+        let optioned_ty = type_in_option(&x.ty);
+        let t = optioned_ty.map_or(&x.ty, |x| x);
         quote! {
             fn #n(&mut self, #n: #t) -> &mut Self {
                 self.#n = Some(#n);
@@ -52,9 +54,16 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let built_fields = origin_fields.iter().map(|x| {
         let n = x.ident.as_ref();
         let err_msg = concat!(stringify!(n));
-        quote! {
+        if type_in_option(&x.ty).is_some() {
+            quote!{
+                #n: self.#n.clone() 
+            }
+        } else {
+            quote! {
             #n: self.#n.clone().ok_or_else::<Box<dyn Error>, _>(||::std::convert::From::from(#err_msg))?
+            }
         }
+        
     });
 
     // let field_name = name_iter.collect();
@@ -93,4 +102,19 @@ pub fn derive(input: TokenStream) -> TokenStream {
     // eprintln!("TOKENS: {}", expanded);
     // Hand the output tokens back to the compiler.
     proc_macro::TokenStream::from(expanded)
+}
+
+fn type_in_option<'a>(ty: &'a Type) -> Option<&'a Type> {
+    if let Type::Path(TypePath{ref path, ..})= ty {
+        let first_path = path.segments.first().unwrap();
+        if first_path.ident == "Option" {
+            if let PathArguments::AngleBracketed(AngleBracketedGenericArguments{ref args, ..}) = first_path.arguments {
+                let inner_ty = args.first().unwrap();
+                if let GenericArgument::Type(ref ty ) = inner_ty {
+                    return Some(ty);
+                }
+            }
+        }
+    }
+    None
 }

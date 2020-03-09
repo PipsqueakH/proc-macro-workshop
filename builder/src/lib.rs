@@ -6,7 +6,7 @@ use quote::{format_ident, quote};
 use syn::{
     parse_macro_input, spanned::Spanned, AngleBracketedGenericArguments, Attribute, Data,
     DataStruct, DeriveInput, Error, Fields, FieldsNamed, GenericArgument, Lit, Meta, MetaList,
-    MetaNameValue, NestedMeta, PathArguments, Result, Type, TypePath,
+    MetaNameValue, NestedMeta, PathArguments, Type, TypePath,
 };
 
 #[proc_macro_derive(Builder, attributes(builder))]
@@ -47,7 +47,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
         }
         let optioned_ty = type_in_container("Option", &x.ty);
         let t = optioned_ty.map_or(&x.ty, |x| x);
-        quote! { #n: Option< #t>}
+        quote! { #n: std::option::Option< #t>}
     });
 
     let builder_fields_name = origin_fields.iter().map(|x| {
@@ -59,7 +59,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 return quote! { #n:  Vec::new()};
             }
         }
-        quote! { #n: None}
+        quote! { #n: std::option::Option::None}
     });
 
     let setter_method = origin_fields.iter().map(|x| {
@@ -91,7 +91,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
         let t = optioned_ty.map_or(&x.ty, |x| x);
         quote! {
             fn #n(&mut self, #n: #t) -> &mut Self {
-                self.#n = Some(#n);
+                self.#n = std::option::Option::Some(#n);
                 self
             }
         }
@@ -106,7 +106,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
             }
         } else {
             quote! {
-            #n: self.#n.clone().ok_or_else::<Box<dyn std::error::Error>, _>(||::std::convert::From::from(#err_msg))?
+            #n: self.#n.clone().ok_or_else::<std::boxed::Box<dyn std::error::Error>, _>(||::std::convert::From::from(#err_msg))?
             }
         }
         
@@ -140,7 +140,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
 
         impl #builder_name {
-            pub fn build(&mut self) -> Result<#name, Box<dyn std::error::Error>> {
+            pub fn build(&mut self) -> std::result::Result<#name, std::boxed::Box<dyn std::error::Error>> {
 
                 Ok(Command {#(#built_fields ,)*})
             }
@@ -153,7 +153,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
     proc_macro::TokenStream::from(expanded)
 }
 
-fn type_in_container<'a>(container: &str, ty: &'a Type) -> Option<&'a Type> {
+fn type_in_container<'a>(container: &str, ty: &'a Type) -> std::option::Option<&'a Type> {
     if let Type::Path(TypePath { ref path, .. }) = ty {
         let first_path = path.segments.first().unwrap();
         if first_path.ident == container {
@@ -163,15 +163,15 @@ fn type_in_container<'a>(container: &str, ty: &'a Type) -> Option<&'a Type> {
             {
                 let inner_ty = args.first().unwrap();
                 if let GenericArgument::Type(ref ty) = inner_ty {
-                    return Some(ty);
+                    return std::option::Option::Some(ty);
                 }
             }
         }
     }
-    None
+    std::option::Option::None
 }
 
-fn setter_name(attr: &Attribute) -> Result<Ident> {
+fn setter_name(attr: &Attribute) -> syn::Result<Ident> {
     match attr.parse_meta() {
         Ok(ref meta) => {
             // println!("meta: {:?}", meta);

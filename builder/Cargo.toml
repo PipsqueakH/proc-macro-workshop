@@ -12,10 +12,6 @@ proc-macro = true
 name = "tests"
 path = "tests/progress.rs"
 
-[[bin]]
-name = "part"
-path = "tests/02-create-builder.rs"
-
 
 
 [dev-dependencies]
